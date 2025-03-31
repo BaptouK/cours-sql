@@ -198,6 +198,10 @@ Select *
 From clients 
 Where LEFT(nom,1) = 'D'
 
+-- 2️⃣ Nom et prénom de tous les clients 
+SELECT prenom, nom 
+FROM clients;
+
 -- 3️⃣ Liste des fiches (n°, état) pour les clients (nom, prénom) qui habitent en Loire Atlantique (44)
 Select fiches.noFic,etat,nom,prenom 
 From fiches 
@@ -224,6 +228,14 @@ JOIN grilleTarifs ON articles.codeGam = grilleTarifs.codeGam AND articles.codeCa
 JOIN tarifs ON grilleTarifs.codeTarif = tarifs.codeTarif
 WHERE fiches.noFic = 1002;
 
+-- 5️⃣ Prix journalier moyen de location par gamme
+
+SELECT gammes.libelle AS Gamme, AVG(tarifs.prixJour) AS `tarif journalier moyen`
+FROM grilleTarifs
+JOIN tarifs ON grilleTarifs.codeTarif = tarifs.codeTarif
+JOIN gammes ON grilleTarifs.codeGam = gammes.codeGam
+GROUP BY gammes.libelle;
+
 -- 6️⃣ Détail de la fiche n°1002 avec le total
 
 SELECT 
@@ -245,3 +257,66 @@ JOIN grilleTarifs ON articles.codeGam = grilleTarifs.codeGam AND articles.codeCa
 JOIN tarifs ON grilleTarifs.codeTarif = tarifs.codeTarif
 WHERE fiches.noFic = 1002;
 
+-- 7️⃣ Grille des tarifs
+
+SELECT 
+categories.libelle AS `Catégorie`,
+    gammes.libelle AS `Gamme`,
+    tarifs.libelle AS `Tarif`,
+    tarifs.prixJour AS `Prix`
+FROM grilleTarifs
+JOIN tarifs ON grilleTarifs.codeTarif = tarifs.codeTarif
+JOIN gammes ON grilleTarifs.codeGam = gammes.codeGam
+JOIN categories ON grilleTarifs.codeCate = categories.codeCate
+ORDER BY categories.libelle, gammes.libelle, tarifs.libelle;
+
+-- 8️⃣ Liste des locations de la catégorie SURF
+
+SELECT 
+articles.refArt,
+    articles.designation,
+    COUNT(lignesFic.refArt) AS nbLocation
+FROM lignesFic
+JOIN articles ON lignesFic.refArt = articles.refArt
+JOIN grilleTarifs ON articles.codeGam = grilleTarifs.codeGam AND articles.codeCate = grilleTarifs.codeCate
+WHERE articles.codeCate = 'SURF'
+GROUP BY articles.refArt, articles.designation;
+
+-- 9️⃣ Calcul du nombre moyen d’articles loués par fiche de location
+
+SELECT AVG(article_count) AS nb_lignes_moyen_par_fiche
+FROM (
+    SELECT lignesFic.noFic, COUNT(lignesFic.refArt) AS article_count
+    FROM lignesFic
+    GROUP BY lignesFic.noFic
+) AS counts;
+
+-- 10 Calcul du nombre de fiches de location établies pour les catégories de location Ski alpin, Surf et Patinette
+
+SELECT 
+    categories.libelle AS `catégorie`,
+    COUNT(lignesFic.refArt) AS `nombre de location`
+FROM lignesFic
+JOIN articles ON lignesFic.refArt = articles.refArt
+JOIN categories ON articles.codeCate = categories.codeCate
+WHERE categories.libelle IN ('Ski alpin', 'Surf', 'Patinette')
+GROUP BY categories.libelle;
+
+-- 11 Calcul du montant moyen des fiches de location
+
+SELECT 
+    AVG(Total) AS `montant moyen d'une fiche de location`
+FROM (
+    SELECT 
+        fiches.noFic,
+        SUM(
+            (DATEDIFF(COALESCE(lignesFic.retour, NOW()), lignesFic.depart) + 1) * tarifs.prixJour
+        ) AS Total
+    FROM fiches
+    JOIN clients ON fiches.noCli = clients.noCli
+    JOIN lignesFic ON fiches.noFic = lignesFic.noFic
+    JOIN articles ON lignesFic.refArt = articles.refArt
+    JOIN grilleTarifs ON articles.codeGam = grilleTarifs.codeGam AND articles.codeCate = grilleTarifs.codeCate
+    JOIN tarifs ON grilleTarifs.codeTarif = tarifs.codeTarif
+    GROUP BY fiches.noFic
+) AS montants;
