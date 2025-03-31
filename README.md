@@ -1,6 +1,7 @@
 # Rendu SQL - Jean-Frédéric VINCENT
 
-Ce dépôt contient le rendu du projet SQL dispensé par Jean-Frédéric VINCENT.
+Ce dépôt contient le rendu des exercices SQL dispensé par Jean-Frédéric VINCENT.
+
 
 
 ## 🔗 Références
